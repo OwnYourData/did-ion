@@ -1,0 +1,24 @@
+{
+    "patches": [
+        {
+            "action": "replace",
+            "document": {
+                "publicKeys": [
+                    {
+                        "id": "#key1",
+                        "type": "Secp256k1VerificationKey2018",
+                        "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+                    }
+                ],
+                "serviceEndpoints": [
+                    {
+                        "id": "PersonalInfo",
+                        "type": "PersonalInfo",
+                        "serviceEndpoint": "https://data-vault.eu/api/personal_info"
+                    }
+                ]
+            }
+        }
+    ],
+    "nextUpdateCommitmentHash": "EiDUc146Jl4W7uA/WXGLm10DAZwH2LbFH5DaOmZu7BOrNQ"
+}
