@@ -115,8 +115,10 @@ Here some auxiliary functions to create the individual attributes in the DID Doc
     $ echo "1" | ruby -e 'require "base64"; require "multihashes"; require "digest"; puts Base64.strict_encode64(Multihashes.encode(Digest::SHA256.digest(ARGF.read), "sha2-256")).gsub("=","")'
     ```    
     Output: `EiBDVaRrGdNI3C9XwEb472PUU467k2AA88nulUonRg3YZQ`    
-* `Keys`: OPEN - I don't know how to create Public/Private Key Pairs and use as placeholder for now the public key from an example    
-    Public Key: `0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69`
+    * `Keys`: For the keys I am using NPM and NodeJS with the https://github.com/decentralized-identity/did-auth-jose repo for Cryptography and JWK things
+    Generate Keys with: `node generate-keys.js`
+    
+    JS JWS: The contents of the `make-jws.js` are wrong but over all spit out the right format so I will look into what you have and update, either way use: `node make-jws.js` 
 
 ## Writing the DID Document
 
