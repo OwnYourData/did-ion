@@ -71,6 +71,7 @@ Please don't hesitate contact me with any questions and corrections! I will do m
     ./bitcoin-cli -testnet -rpcuser=admin -rpcpassword=abc sendtoaddress xyz 0.215
     ```
 
+<!---
 * I use Ruby for creating any dynamic fields and require the gems `base64`, `digest`, and `multihashes`        
     ```bash
     $ ruby -v
@@ -81,6 +82,7 @@ Please don't hesitate contact me with any questions and corrections! I will do m
     ```bash
     $ echo "1" | ruby -e 'require "base64"; require "multihashes"; require "digest"; puts Base64.strict_encode64(Multihashes.encode(Digest::SHA256.digest(ARGF.read), "sha2-256")).gsub("=","")'
     ```
+--->
 
 ## Creating a DID Document
 
@@ -122,7 +124,7 @@ The [Sidetree Protocol Specification](https://github.com/decentralized-identity/
 }
 ```    
 
-Through tests and reading various online sources I found that actually the following structure is needed to be accepted by the current ION client:    
+However, through tests and reading various online sources I found that for a DID registration request a [JSON Web Signature in JSON serialization format](https://tools.ietf.org/html/rfc7515) must be used. The payload has the following format:
 
 ```json
 {
@@ -150,19 +152,36 @@ Through tests and reading various online sources I found that actually the follo
 }
 ```
 
+The request has finally the following format:   
+```json
+{
+    "payload":"<base64 encoded from above>",
+    "signature":"<payload signed with your private key>",
+    "protected":"<base64 encoded header attributes>"
+}
+```
+
+Here now the steps to create the documents:
 To create such a document use the following 2 helper functions: [generate-keys.js](generate-keys.js) and [make-jws.js](make-jws.js)    
 
 1. Install Prerequisites    
+    There are node.js libraries available to create keys and perform the signing. Here my setup and installing the required package.
     ```bash
+    $ node -v
+    v10.19.0
+    $ npm -v
+    6.13.4
     $ npm install @decentralized-identity/did-auth-jose
     ``` 
 
 2. Generate Key Pairs    
+    Generate your keys as a JSON Web Key (JWK) file using the [did-auth-jose library](https://www.npmjs.com/package/@decentralized-identity/did-auth-jose) and [generate-keys.js](generate-keys.js):    
     ```bash
     $ node generate-keys.js
     ```
 
 3. Create JWS
+    For the JSON Web Signature in JSON serialization format another javascript is available that merges the previously generated public key (`./public.jwk`) information with an array of service endpoints ([did_service.json](did_service.json)), signs the payload with private key (`./private.jwk`) and adds the header information:   
     ```bash
     $ cat did_service.json | node make-jws.js > did_jws.json
     ```    
@@ -219,3 +238,21 @@ Response:
   "id": "did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw"
 }
 ```
+
+You should see on the console running `npm run core` the following output:    
+```
+Operation type: 'create', DID unique suffix: 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw'
+```
+
+Afterwards it takes some time until the DID registration is processed (can take up to 30min).    
+However, when you try to resolve it    
+```bash
+$ curl http://localhost:3000/did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw
+```    
+returns status 404 - not found and the Sidetree core service provides the output:    
+```
+Handling resolution request for: did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw...
+Resolving DID unique suffix 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw'...
+Ignored invalid operation for DID 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw' in transaction '7311022180270081' at time '1702230' at operation index 0.
+```    
+
