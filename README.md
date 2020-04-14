@@ -4,7 +4,13 @@ This page aims to provide a step-by-step instruction to create a [DID](https://w
 
 ## Contribute
 
-I have gathered this information to gain a better understanding of ION and DIDs in general. These steps are currently not working and I ask you to contact me with any questions and corrections! I will do my best to keep this page up to date and factor in any feedback.
+I have gathered this information to gain a better understanding of ION and DIDs in general. So far I'm able to write a DID (`did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw`) for a given [DID Document](did.json) but when trying to resolve it the following error is displayed:    
+```
+Handling resolution request for: did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw...
+Resolving DID unique suffix 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw'...
+Ignored invalid operation for DID 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw' in transaction '7311022180270081' at time '1702230' at operation index 0.
+```    
+Please don't hesitate contact me with any questions and corrections! I will do my best to keep this page up to date and factor in any feedback.
 
 ## Prerequisites
 
@@ -51,6 +57,19 @@ I have gathered this information to gain a better understanding of ION and DIDs 
       "private_keys_enabled": true
     }
     ```
+    *Note:* I got the following error when creating a DID for the first time:    
+    ```
+    Low balance (0 days remaining), please fund your wallet. Amount: >=16128000 satoshis, Address: xyz
+  Error: Not enough satoshis to broadcast. Failed to broadcast anchor string EiAQ8Su_nCfE7gApS19Wpob4I2vlC81D3deMSH5yydn1MQ
+      at BitcoinProcessor.<anonymous> (/home/user/ion/node_modules/@decentralized-identity/sidetree/dist/lib/bitcoin/BitcoinProcessor.js:213:31)
+      at Generator.next (<anonymous>)
+      at fulfilled (/home/user/ion/node_modules/@decentralized-identity/sidetree/dist/lib/bitcoin/BitcoinProcessor.js:4:58)
+      at process._tickCallback (internal/process/next_tick.js:68:7)
+    ```    
+    Therefore, I used the following command to transfer the Testnet3 Bitcoins to the stated address:    
+    ```bash
+    ./bitcoin-cli -testnet -rpcuser=admin -rpcpassword=abc sendtoaddress xyz 0.215
+    ```
 
 * I use Ruby for creating any dynamic fields and require the gems `base64`, `digest`, and `multihashes`        
     ```bash
@@ -65,7 +84,7 @@ I have gathered this information to gain a better understanding of ION and DIDs 
 
 ## Creating a DID Document
 
-According to the [Sidetree Protocol Specification](https://github.com/decentralized-identity/sidetree/blob/master/docs/protocol.md#create-operation-request-body-schema) a DID Document should have the following structure:    
+The [Sidetree Protocol Specification](https://github.com/decentralized-identity/sidetree/blob/master/docs/protocol.md#create-operation-request-body-schema) describes the structure of a valid DID Document:    
 
 ```json
 {
@@ -103,27 +122,100 @@ According to the [Sidetree Protocol Specification](https://github.com/decentrali
 }
 ```    
 
-Here some auxiliary functions to create the individual attributes in the DID Document using as concrete example [`did.json`](did.json):    
+Through tests and reading various online sources I found that actually the following structure is needed to be accepted by the current ION client:    
 
-* `patchDataHash`: use the following Ruby script to remove any white-space characters and calculate the multihash    
-    ```bash    
-    $ cat patchData.json | ruby -e 'require "base64"; require "multihashes"; require "digest"; puts Base64.strict_encode64(Multihashes.encode(Digest::SHA256.digest(ARGF.read.gsub(/\s+/,"")), "sha2-256")).gsub("=","")'
-    ```    
-    Output: `EiBLwuKP50apvP8s6EAAytlYBMcSGZjhfnOba+efshTiIA`
-* `CommitmentHash`: I think you can use basicaly any string and create the multihash    
+```json
+{
+    "@context": "https://w3id.org/did/v1",
+    "publicKey": [{
+        "id": "string",
+        "type": "Secp256k1VerificationKey2018",
+        "publicKeyJwk": { "..."},
+        "usage": "signing"
+    }, {
+        "id": "string",
+        "type": "Secp256k1VerificationKey2018",
+        "publicKeyJwk": { "..."},
+        "usage": "recovery"
+    }],
+    "service": [{
+        "id": "PersonalInfo",
+        "type": "AgentService",
+        "serviceEndpoint": {
+            "@context": "schema.identity.foundation/hub",
+            "@type": "UserServiceEndpoint",
+            "instance": ["URL"]
+        }
+    }]
+}
+```
+
+To create such a document use the following 2 helper functions: [generate-keys.js](generate-keys.js) and [make-jws.js](make-jws.js)    
+
+1. Install Prerequisites    
     ```bash
-    $ echo "1" | ruby -e 'require "base64"; require "multihashes"; require "digest"; puts Base64.strict_encode64(Multihashes.encode(Digest::SHA256.digest(ARGF.read), "sha2-256")).gsub("=","")'
+    $ npm install @decentralized-identity/did-auth-jose
+    ``` 
+
+2. Generate Key Pairs    
+    ```bash
+    $ node generate-keys.js
+    ```
+
+3. Create JWS
+    ```bash
+    $ cat did_service.json | node make-jws.js > did_jws.json
     ```    
-    Output: `EiBDVaRrGdNI3C9XwEb472PUU467k2AA88nulUonRg3YZQ`    
-* `Keys`: OPEN - I don't know how to create Public/Private Key Pairs and use as placeholder for now the public key from an example    
-    Public Key: `0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69`
 
-## Writing the DID Document
-
+## Write DID Document
 Use the following command to write the DID Document:    
 
 ```bash    
-$ cat did.json | ruby -e 'puts ARGF.read.gsub(/\s+/,"")' | curl -s -o /dev/null -w "%{http_code}" -X POST -d @- -H 'Content-Type: application/json' http://localhost:3000
+$ cat did_jws.json | curl -X POST -d @- -H 'Content-Type: application/json' http://localhost:3000
 ```    
 
-... leads to response `400` - client-side error
+Response:
+```
+{
+  "@context": "https://w3id.org/did/v1",
+  "publicKey": [{
+    "id": "#key-1",
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyJwk": {
+      "kty": "EC",
+      "kid": "#key-1",
+      "crv": "P-256K",
+      "x": "j23-trviZytibbYLKND7YR8CYwUAFMYS9PNAaqdSI3k",
+      "y": "c7oo1QLOczTP7jbMwmdE9nr64TkuIJTfRuhYYWaKVdQ",
+      "use": "verify",
+      "defaultEncryptionAlgorithm": "none",
+      "defaultSignAlgorithm": "ES256K"
+    },
+    "usage": "signing"
+  }, {
+    "id": "#key-1",
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyJwk": {
+      "kty": "EC",
+      "kid": "#key-1",
+      "crv": "P-256K",
+      "x": "j23-trviZytibbYLKND7YR8CYwUAFMYS9PNAaqdSI3k",
+      "y": "c7oo1QLOczTP7jbMwmdE9nr64TkuIJTfRuhYYWaKVdQ",
+      "use": "verify",
+      "defaultEncryptionAlgorithm": "none",
+      "defaultSignAlgorithm": "ES256K"
+    },
+    "usage": "recovery"
+  }],
+  "service": [{
+    "id": "PersonalInfo",
+    "type": "AgentService",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instance": ["https://data-vault.eu/api/personal_info"]
+    }
+  }],
+  "id": "did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw"
+}
+```

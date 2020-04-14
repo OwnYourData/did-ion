@@ -1,0 +1,9 @@
+[{
+    "id": "PersonalInfo",
+    "type": "AgentService",
+    "serviceEndpoint": {
+        "@context": "schema.identity.foundation/hub",
+        "@type": "UserServiceEndpoint",
+        "instance": ["https://data-vault.eu/api/personal_info"]
+    }
+}]

@@ -1,32 +1,41 @@
 {
-    "type": "create",
-    "suffixData": {
-        "patchDataHash": "EiBLwuKP50apvP8s6EAAytlYBMcSGZjhfnOba+efshTiIA",
-        "recoveryKey": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69",
-        "nextRecoveryCommitmentHash": "EiBrhrJz/zT84Z1rgE7/Wj9XR62k6qIvHUnAHlLdt4dbSw"
-    },
-    "patchData": {
-        "patches": [
-            {
-                "action": "replace",
-                "document": {
-                    "publicKeys": [
-                        {
-                            "id": "#key1",
-                            "type": "Secp256k1VerificationKey2018",
-                            "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
-                        }
-                    ],
-                    "serviceEndpoints": [
-                        {
-                            "id": "PersonalInfo",
-                            "type": "PersonalInfo",
-                            "serviceEndpoint": "https://data-vault.eu/api/personal_info"
-                        }
-                    ]
-                }
-            }
-        ],
-        "nextUpdateCommitmentHash": "EiDUc146Jl4W7uA/WXGLm10DAZwH2LbFH5DaOmZu7BOrNQ"
-    }
+    "@context": "https://w3id.org/did/v1",
+    "publicKey": [{
+        "id": "#key-1",
+        "type": "Secp256k1VerificationKey2018",
+        "publicKeyJwk": {
+            "kty": "EC",
+            "kid": "#key-1",
+            "crv": "P-256K",
+            "x": "j23-trviZytibbYLKND7YR8CYwUAFMYS9PNAaqdSI3k",
+            "y": "c7oo1QLOczTP7jbMwmdE9nr64TkuIJTfRuhYYWaKVdQ",
+            "use": "verify",
+            "defaultEncryptionAlgorithm": "none",
+            "defaultSignAlgorithm": "ES256K"
+        },
+        "usage": "signing"
+    }, {
+        "id": "#key-1",
+        "type": "Secp256k1VerificationKey2018",
+        "publicKeyJwk": {
+            "kty": "EC",
+            "kid": "#key-1",
+            "crv": "P-256K",
+            "x": "j23-trviZytibbYLKND7YR8CYwUAFMYS9PNAaqdSI3k",
+            "y": "c7oo1QLOczTP7jbMwmdE9nr64TkuIJTfRuhYYWaKVdQ",
+            "use": "verify",
+            "defaultEncryptionAlgorithm": "none",
+            "defaultSignAlgorithm": "ES256K"
+        },
+        "usage": "recovery"
+    }],
+    "service": [{
+        "id": "PersonalInfo",
+        "type": "AgentService",
+        "serviceEndpoint": {
+            "@context": "schema.identity.foundation/hub",
+            "@type": "UserServiceEndpoint",
+            "instance": ["https://data-vault.eu/api/personal_info"]
+        }
+    }]
 }
