@@ -1,47 +1,99 @@
 # Create a DID on ION
 
-This page aims to provide a step-by-step instruction to create a [DID](https://w3c.github.io/did-core/) on [ION](https://github.com/decentralized-identity/ion).
+This page aims to provide a step-by-step instruction to create a [DID](https://w3c.github.io/did-core/) on [ION](https://github.com/decentralized-identity/ion) using the blockchain-agnostic [Sidetree](https://github.com/decentralized-identity/sidetree) protocol on top of Bitcoin.    
+
+*Note: There are also implementations for Ethereum (DID Method [Element](https://github.com/decentralized-identity/element)) and Hyperledger Fabric (DID Method [TrustBlock](https://github.com/trustbloc/trustbloc-did-method)). The ultimate goal is to also provide instructions for each DID method.*
 
 ## Contribute
 
-I have gathered this information to gain a better understanding of ION and DIDs in general. So far I'm able to write a DID (`did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw`) for a given [DID Document](did.json) but when trying to resolve it the following error is displayed:    
-```
-Handling resolution request for: did:ion:test:EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw...
-Resolving DID unique suffix 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw'...
-Ignored invalid operation for DID 'EiANCLg1uCmxUR4IUkpW8Y5_nuuXLbAEwonQd4q8pflTnw' in transaction '7311022180270081' at time '1702230' at operation index 0.
-```    
+I have gathered this information to gain a better understanding of ION and DIDs in general. As of June 2020 I run a permanent bitcoin and IPFS node:    
+```bash
+$ curl http://localhost:3000/version
+[{"name":"core","version":"0.9.1"},{"name":"bitcoin","version":"0.9.1"},{"name":"ipfs","version":"0.9.1"}]
+``` 
+
+For a project I want to create a few hundred DIDs (example [DID Document](did.json)) on the Bitcon Mainnet but so far I'm still stuck with resolving the example DID at the end of the [ION Installation Guide](https://github.com/decentralized-identity/ion/blob/master/install-guide.md).    
+
 Please don't hesitate contact me with any questions and corrections! I will do my best to keep this page up to date and factor in any feedback.
 
 ## Prerequisites
 
 * ION Client
-    Setup ION client v0.5 as described here: [ION Installation Guide](https://github.com/decentralized-identity/ion/blob/master/install-guide.md)    
-    *Verify:* `curl http://localhost:3000/did:ion:test:EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA` returns a DID Document
+    Setup ION client v0.9.1 as described here: [ION Installation Guide](https://github.com/decentralized-identity/ion/blob/master/install-guide.md)    
+    Configuration files:
 
-    the `json/bitcoin-config.json`   
-    ```json
-    {
-      "bitcoinPeerUri": "http://localhost:18332",
-      "bitcoinRpcUsername": "admin",
-      "bitcoinRpcPassword": "xxx",
-      "bitcoinWalletImportString": "xxx",
-      "bitcoinFee": 4000,
-      "sidetreeTransactionPrefix": "ion:test:",
-      "genesisBlockNumber": 1500000,
-      "databaseName": "sidetree-bitcoin",
-      "transactionFetchPageSize": 100,
-      "mongoDbConnectionString": "mongodb://localhost:27017/",
-      "port": 3002
-    }
-    ```
+    <details>
+      <summary>
+        <code>bitcoin.conf</code>
+      </summary>
+
+
+      testnet=1
+      server=1
+      datadir=/path/to/data
+      rpcuser=[RPC-USER]
+      rpcpassword=[RPC-PWD]
+      txindex=1
+    
+
+    *Notes:*    
+
+    * the `rpcuser` and `rpcpassword` is shown when you setup Bitcoin Core    
+    * make sure to have `txindex=1` included otherwise you get weird error messages!
+
+    </details>
+
+    <details>
+      <summary>
+        <code>json/testnet-bitcoin-config.json</code>
+      </summary>
+
+        {
+          "bitcoinFeeSpendingCutoffPeriodInBlocks": 1,
+          "bitcoinFeeSpendingCutoff": 0.001,
+          "bitcoinPeerUri": "http://localhost:18332",
+          "bitcoinRpcUsername": "[RPC-USER]",
+          "bitcoinRpcPassword": "[RPC-PWD]",
+          "bitcoinWalletOrImportString": "[WALLET-PRIVATE-KEY]",
+          "databaseName": "ion-testnet-bitcoin",
+          "genesisBlockNumber": 1764000,
+          "mongoDbConnectionString": "mongodb://localhost:27017/",
+          "port": 3002,
+          "sidetreeTransactionFeeMarkupPercentage": 1,
+          "sidetreeTransactionPrefix": "ion:",
+          "valueTimeLockAmountInBitcoins": 0
+        }
+
     *Note:*    
 
-    * the `bitcoinRpcPassword` is shown when you execute the ION Installation Guide    
-    * the `bitcoinWalletImportString` is shown as error message when you execute `npm run bitcoin` for the first time in the course of the ION Installation Guide
+    * the `bitcoinRpcUsername` and `bitcoinRpcPassword` is shown when you setup Bitcoin Core    
+    * to generate a new wallet run `bitcoin-cli getnewaddress ""` and the output is `<wallet_public_key>`; to generate `[WALLET-PRIVATE-KEY]` run `bitcoin-cli dumpprivkey <wallet_public_key>`    
+    </details>
+
+
+    <details>
+      <summary>
+        <code>json/testnet-core-config.json</code>
+      </summary>
+
+        {
+          "batchingIntervalInSeconds": 600,
+          "blockchainServiceUri": "http://127.0.0.1:3002",
+          "contentAddressableStoreServiceUri": "http://127.0.0.1:3003",
+          "databaseName": "ion-testnet-core",
+          "didMethodName": "ion:test",
+          "maxConcurrentDownloads": 20,
+          "mongoDbConnectionString": "mongodb://localhost:27017/",
+          "observingIntervalInSeconds": 60,
+          "port": 3000
+        }
+
+    </details>
+
 
 * the example here uses the Bitcoin Testnet3 and I made sure to have a configured wallet with some testnet Bitcoins    
     ```bash
-    bitcoin-0.18.0/bin$ ./bitcoin-cli getwalletinfo
+    $ ./bitcoin-cli getwalletinfo
     {
       "walletname": "",
       "walletversion": 169900,
@@ -57,7 +109,7 @@ Please don't hesitate contact me with any questions and corrections! I will do m
       "private_keys_enabled": true
     }
     ```
-    *Note:* I got the following error when creating a DID for the first time:    
+    *Note:* I got the following error when creating a DID for the first time (ION v0.5):    
     ```
     Low balance (0 days remaining), please fund your wallet. Amount: >=16128000 satoshis, Address: xyz
   Error: Not enough satoshis to broadcast. Failed to broadcast anchor string EiAQ8Su_nCfE7gApS19Wpob4I2vlC81D3deMSH5yydn1MQ
